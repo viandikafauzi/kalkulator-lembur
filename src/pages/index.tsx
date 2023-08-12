@@ -1,4 +1,3 @@
-"use client";
 import Head from "next/head";
 import {
   Formik,
@@ -9,13 +8,11 @@ import {
   type FieldProps,
   type FormikProps,
 } from "formik";
-// TODO add zod
-// import { z } from "zod";
+import React from "react";
 
 interface DayDetails {
   date: Date | string;
   totalHour: number;
-  isWeekend: boolean;
   isPublicHoliday: boolean;
 }
 
@@ -23,20 +20,6 @@ interface FormValues {
   baseSalary: number;
   daysExtraWork: Array<DayDetails>;
 }
-
-const isWeekend = (date: string): boolean => {
-  const dateObj = new Date(date);
-  // const datetime = z.string().datetime();
-  // if (!datetime.parse(date)) date = new Date(date);
-  return dateObj.getDay() === 6 || dateObj.getDay() === 0;
-};
-
-// const formatDateToISO = (date: Date) => {
-//   const year = date.getFullYear();
-//   const month = String(date.getMonth() + 1).padStart(2, "0"); // Months are zero-based
-//   const day = String(date.getDate()).padStart(2, "0");
-//   return `${year}-${month}-${day}`;
-// };
 
 interface NumberInputProps extends FieldProps {
   form: FormikProps<unknown>; // Replace 'any' with the type of your form values
@@ -55,9 +38,53 @@ const NumberInput: React.FC<NumberInputProps> = ({ field, form }) => {
       {...field}
       value={formattedValue}
       onChange={handleChange}
-      className="text-right"
+      className="rounded-md border border-gray-300 px-4 py-2 text-right"
     />
   );
+};
+
+const submitHandler = (values: FormValues) => {
+  let lemburWorkday = 0,
+    lemburHoliday = 0,
+    totalLembur = 0;
+  for (const days of values.daysExtraWork) {
+    const theDate = new Date(days.date);
+    if (theDate.getDay() === 6 || theDate.getDay() === 0)
+      days.isPublicHoliday = true;
+  }
+
+  for (const days of values.daysExtraWork) {
+    if (days.isPublicHoliday) {
+      lemburHoliday += days.totalHour;
+    } else lemburWorkday += days.totalHour;
+  }
+
+  // hitung biaya lembur per jam
+  const perJam = values.baseSalary / 173;
+
+  if (lemburWorkday > 1) {
+    totalLembur += (lemburWorkday / 2) * perJam * 1.5;
+    totalLembur += (lemburWorkday / 2) * perJam * 2;
+  } else {
+    totalLembur += perJam * lemburWorkday;
+  }
+
+  if (lemburHoliday > 8) {
+    totalLembur = 8 * perJam * 2;
+    lemburHoliday -= 8;
+    if (lemburHoliday > 1) {
+      totalLembur = lemburHoliday * perJam * 3;
+      lemburHoliday -= 1;
+    }
+    if (lemburHoliday > 0) {
+      totalLembur = lemburHoliday * perJam * 4;
+    }
+  } else {
+    totalLembur = lemburHoliday * perJam * 2;
+  }
+
+  console.log(totalLembur); // TODO move this to UI
+  alert(JSON.stringify(values, null, 2));
 };
 
 export default function Home() {
@@ -78,7 +105,6 @@ export default function Home() {
                 {
                   date: "",
                   totalHour: 0,
-                  isWeekend: false,
                   isPublicHoliday: false,
                 },
               ],
@@ -90,7 +116,7 @@ export default function Home() {
               { setSubmitting }: FormikHelpers<FormValues>
             ) => {
               setTimeout(() => {
-                alert(JSON.stringify(values, null, 2));
+                submitHandler(values);
                 setSubmitting(false);
               }, 500);
             }}
@@ -108,106 +134,126 @@ export default function Home() {
                     component={NumberInput}
                   />
                 </div>
-                <div className="flex flex-row items-center gap-4">
-                  <span>No</span>
-                  <span>Tanggal</span>
-                  <span>Total Jam</span>
-                  <span>Hari libur nasional?</span>
-                  <span>Hapus</span>
-                </div>
-                <FieldArray
-                  name="daysExtraWork"
-                  render={(arrayHelpers: {
-                    remove: (arg0: number) => void;
-                    push: (arg0: {
-                      date: string;
-                      totalHour: number;
-                      isWeekend: boolean;
-                      isPublicHoliday: boolean;
-                    }) => void;
-                  }) => {
-                    return (
-                      <>
-                        {values.daysExtraWork.length > 0 ? (
-                          values.daysExtraWork.map((_, index) => (
-                            <div key={index}>
-                              <div className="flex flex-row items-center gap-4">
-                                <label>hari ke-{index}</label>
-                                <Field
-                                  type="date"
-                                  id={`daysExtraWork.${index}.date`}
-                                  name={`daysExtraWork.${index}.date`}
-                                  onChange={(e: {
-                                    target: { value: string };
-                                  }) => {
-                                    const isThisWeekend = isWeekend(
-                                      e.target.value
-                                    );
-                                    void setFieldValue(
-                                      `daysExtraWork.${index}.isWeekend`,
-                                      isThisWeekend
-                                    );
-                                    void setFieldValue(
-                                      `daysExtraWork.${index}.date`,
-                                      e.target.value
-                                    );
-                                  }}
-                                />
-                                <Field
-                                  id={`daysExtraWork.${index}.totalHour`}
-                                  name={`daysExtraWork.${index}.totalHour`}
-                                  className="rounded-md border border-gray-300 px-4 py-2 text-right"
-                                />
-                                <Field
-                                  type="checkbox"
-                                  id={`daysExtraWork.${index}.isHoliday`}
-                                  name={`daysExtraWork.${index}.isHoliday`}
-                                />
-                                <button
-                                  type="button"
-                                  onClick={() => arrayHelpers.remove(index)}
-                                >
-                                  -
-                                </button>
-                              </div>
-                              {index === values.daysExtraWork.length - 1 && (
-                                <button
-                                  type="button"
-                                  onClick={() =>
-                                    arrayHelpers.push({
-                                      date: "",
-                                      totalHour: 0,
-                                      isWeekend: false,
-                                      isPublicHoliday: false,
-                                    })
-                                  }
-                                >
-                                  +
-                                </button>
-                              )}
-                            </div>
-                          ))
-                        ) : (
-                          <button
-                            type="button"
-                            onClick={() =>
-                              arrayHelpers.push({
-                                date: "",
-                                totalHour: 0,
-                                isWeekend: false,
-                                isPublicHoliday: false,
-                              })
-                            }
-                          >
-                            Add a date
-                          </button>
-                        )}
-                      </>
-                    );
-                  }}
-                ></FieldArray>
-                {/* TODO work on submit */}
-                <button type="submit">Submit</button>
+                <table className="border border-gray-300">
+                  <thead>
+                    <tr>
+                      <td>No</td>
+                      <td>Tanggal</td>
+                      <td>Total Jam</td>
+                      <td>Hari libur nasional?</td>
+                      <td>Hapus</td>
+                    </tr>
+                  </thead>
+                  <tbody className="text-center">
+                    <FieldArray
+                      name="daysExtraWork"
+                      render={(arrayHelpers: {
+                        remove: (arg0: number) => void;
+                        push: (arg0: {
+                          date: string;
+                          totalHour: number;
+                          isPublicHoliday: boolean;
+                        }) => void;
+                      }) => {
+                        return (
+                          <React.Fragment>
+                            {values.daysExtraWork.length > 0 ? (
+                              values.daysExtraWork.map((_, index) => (
+                                <React.Fragment key={index}>
+                                  <tr>
+                                    <td>{index + 1}</td>
+                                    <td>
+                                      <Field
+                                        type="date"
+                                        id={`daysExtraWork.${index}.date`}
+                                        name={`daysExtraWork.${index}.date`}
+                                        onChange={(e: {
+                                          target: { value: string };
+                                        }) => {
+                                          void setFieldValue(
+                                            `daysExtraWork.${index}.date`,
+                                            e.target.value
+                                          );
+                                        }}
+                                      />
+                                    </td>
+                                    <td>
+                                      <Field
+                                        id={`daysExtraWork.${index}.totalHour`}
+                                        name={`daysExtraWork.${index}.totalHour`}
+                                        className="rounded-md border border-gray-300 px-4 py-2 text-right"
+                                      />
+                                    </td>
+                                    <td>
+                                      <Field
+                                        type="checkbox"
+                                        id={`daysExtraWork.${index}.isPublicHoliday`}
+                                        name={`daysExtraWork.${index}.isPublicHoliday`}
+                                      />
+                                    </td>
+                                    <td>
+                                      <button
+                                        type="button"
+                                        onClick={() =>
+                                          arrayHelpers.remove(index)
+                                        }
+                                      >
+                                        -
+                                      </button>
+                                    </td>
+                                  </tr>
+                                  {index ===
+                                    values.daysExtraWork.length - 1 && (
+                                    <tr>
+                                      <td colSpan={5} className="text-center">
+                                        <button
+                                          type="button"
+                                          onClick={() =>
+                                            arrayHelpers.push({
+                                              date: "",
+                                              totalHour: 0,
+                                              isPublicHoliday: false,
+                                            })
+                                          }
+                                        >
+                                          +
+                                        </button>
+                                      </td>
+                                    </tr>
+                                  )}
+                                </React.Fragment>
+                              ))
+                            ) : (
+                              <tr>
+                                <td>
+                                  <button
+                                    type="button"
+                                    onClick={() =>
+                                      arrayHelpers.push({
+                                        date: "",
+                                        totalHour: 0,
+                                        isPublicHoliday: false,
+                                      })
+                                    }
+                                  >
+                                    Add a date
+                                  </button>
+                                </td>
+                              </tr>
+                            )}
+                          </React.Fragment>
+                        );
+                      }}
+                    ></FieldArray>
+                  </tbody>
+                  <tfoot>
+                    <tr>
+                      <td colSpan={5} className="text-right">
+                        <button type="submit">Submit</button>
+                      </td>
+                    </tr>
+                  </tfoot>
+                </table>
               </Form>
             )}
           </Formik>
