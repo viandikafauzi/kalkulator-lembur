@@ -141,7 +141,7 @@ export default function Home() {
                       <td>Tanggal</td>
                       <td>Total Jam</td>
                       <td>Hari libur nasional?</td>
-                      <td>Hapus</td>
+                      <td></td>
                     </tr>
                   </thead>
                   <tbody className="text-center">
@@ -194,11 +194,12 @@ export default function Home() {
                                     <td>
                                       <button
                                         type="button"
+                                        className="mb-2 mr-2 rounded-lg bg-red-500 px-5 py-2.5 text-sm font-medium text-white hover:bg-red-800 focus:outline-none focus:ring-4 focus:ring-red-700 dark:bg-red-500 dark:hover:bg-red-700 dark:focus:ring-red-900"
                                         onClick={() =>
                                           arrayHelpers.remove(index)
                                         }
                                       >
-                                        -
+                                        Hapus
                                       </button>
                                     </td>
                                   </tr>
@@ -215,8 +216,9 @@ export default function Home() {
                                               isPublicHoliday: false,
                                             })
                                           }
+                                          className="mb-2 mr-2 rounded-lg border border-gray-200 bg-white px-5 py-2.5 text-sm font-medium text-gray-900 hover:bg-gray-100 hover:text-blue-700 focus:z-10 focus:outline-none focus:ring-4 focus:ring-gray-200 dark:border-gray-600 dark:bg-gray-800 dark:text-gray-400 dark:hover:bg-gray-700 dark:hover:text-white dark:focus:ring-gray-700"
                                         >
-                                          +
+                                          Tambah hari lembur
                                         </button>
                                       </td>
                                     </tr>
@@ -249,7 +251,12 @@ export default function Home() {
                   <tfoot>
                     <tr>
                       <td colSpan={5} className="text-right">
-                        <button type="submit">Submit</button>
+                        <button
+                          type="submit"
+                          className="mb-2 mr-2 rounded-lg bg-blue-700 px-5 py-2.5 text-sm font-medium text-white hover:bg-blue-800 focus:outline-none focus:ring-4 focus:ring-blue-300 dark:bg-blue-600 dark:hover:bg-blue-700 dark:focus:ring-blue-800"
+                        >
+                          Submit
+                        </button>
                       </td>
                     </tr>
                   </tfoot>
