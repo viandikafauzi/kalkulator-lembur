@@ -8,7 +8,7 @@ import {
   type FieldProps,
   type FormikProps,
 } from "formik";
-import React from "react";
+import React, { useState } from "react";
 
 interface DayDetails {
   date: Date | string;
@@ -43,51 +43,52 @@ const NumberInput: React.FC<NumberInputProps> = ({ field, form }) => {
   );
 };
 
-const submitHandler = (values: FormValues) => {
-  let lemburWorkday = 0,
-    lemburHoliday = 0,
-    totalLembur = 0;
-  for (const days of values.daysExtraWork) {
-    const theDate = new Date(days.date);
-    if (theDate.getDay() === 6 || theDate.getDay() === 0)
-      days.isPublicHoliday = true;
-  }
-
-  for (const days of values.daysExtraWork) {
-    if (days.isPublicHoliday) {
-      lemburHoliday += days.totalHour;
-    } else lemburWorkday += days.totalHour;
-  }
-
-  // hitung biaya lembur per jam
-  const perJam = values.baseSalary / 173;
-
-  if (lemburWorkday > 1) {
-    totalLembur += (lemburWorkday / 2) * perJam * 1.5;
-    totalLembur += (lemburWorkday / 2) * perJam * 2;
-  } else {
-    totalLembur += perJam * lemburWorkday;
-  }
-
-  if (lemburHoliday > 8) {
-    totalLembur = 8 * perJam * 2;
-    lemburHoliday -= 8;
-    if (lemburHoliday > 1) {
-      totalLembur = lemburHoliday * perJam * 3;
-      lemburHoliday -= 1;
-    }
-    if (lemburHoliday > 0) {
-      totalLembur = lemburHoliday * perJam * 4;
-    }
-  } else {
-    totalLembur = lemburHoliday * perJam * 2;
-  }
-
-  console.log(totalLembur); // TODO move this to UI
-  alert(JSON.stringify(values, null, 2));
-};
-
 export default function Home() {
+  const [totalUang, setTotalUang] = useState(0);
+
+  const submitHandler = (values: FormValues) => {
+    let lemburWorkday = 0,
+      lemburHoliday = 0,
+      totalLembur = 0;
+    for (const days of values.daysExtraWork) {
+      const theDate = new Date(days.date);
+      if (theDate.getDay() === 6 || theDate.getDay() === 0)
+        days.isPublicHoliday = true;
+    }
+
+    for (const days of values.daysExtraWork) {
+      if (days.isPublicHoliday) {
+        lemburHoliday += days.totalHour;
+      } else lemburWorkday += days.totalHour;
+    }
+
+    // hitung biaya lembur per jam
+    const perJam = values.baseSalary / 173;
+
+    if (lemburWorkday > 1) {
+      totalLembur += (lemburWorkday / 2) * perJam * 1.5;
+      totalLembur += (lemburWorkday / 2) * perJam * 2;
+    } else {
+      totalLembur += perJam * lemburWorkday;
+    }
+
+    if (lemburHoliday > 8) {
+      totalLembur += 8 * perJam * 2;
+      lemburHoliday -= 8;
+      if (lemburHoliday > 1) {
+        totalLembur += lemburHoliday * perJam * 3;
+        lemburHoliday -= 1;
+      }
+      if (lemburHoliday > 0) {
+        totalLembur += lemburHoliday * perJam * 4;
+      }
+    } else {
+      totalLembur += lemburHoliday * perJam * 2;
+    }
+
+    setTotalUang(totalLembur);
+  };
+
   return (
     <>
       <Head>
@@ -97,7 +98,7 @@ export default function Home() {
       </Head>
       <main className="bg-grey flex min-h-screen flex-col items-center justify-center">
         <div className="container flex flex-col items-center justify-center gap-12 px-4 py-16 ">
-          <div>Kalkulator Pajak</div>
+          <div>Kalkulator Lembur</div>
           <Formik
             initialValues={{
               baseSalary: 0,
@@ -134,7 +135,7 @@ export default function Home() {
                     component={NumberInput}
                   />
                 </div>
-                <table className="border border-gray-300">
+                <table className="rounded-md border border-gray-300 p-7">
                   <thead>
                     <tr>
                       <td>No</td>
@@ -265,6 +266,11 @@ export default function Home() {
             )}
           </Formik>
         </div>
+        {totalUang > 0 && (
+          <span>
+            total lembur anda {Math.floor(totalUang).toLocaleString()}
+          </span>
+        )}
       </main>
     </>
   );
